@@ -118,7 +118,7 @@ slow-off:
 
 .PHONY: setup
 setup:
-	sudo apt install -y percona-toolkit dstat git unzip snapd
+	sudo yum install -y percona-toolkit dstat git unzip snapd
 	git config --global user.email "tohu.soy@gmail.com"
 	git config --global user.name "tohutohu"
 	wget https://github.com/matsuu/kataribe/releases/download/v0.4.1/kataribe-v0.4.1_linux_amd64.zip -O kataribe.zip
