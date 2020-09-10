@@ -42,7 +42,8 @@ build:
 
 .PHONY: restart
 restart:
-	sudo systemctl restart isucari.golang.service
+	sudo systemctl restart torb.go
+	sudo systemctl restart h2o
 
 .PHONY: test
 test:
