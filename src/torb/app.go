@@ -174,14 +174,23 @@ func getLoginUser(c echo.Context) (*User, error) {
 	return &user, err
 }
 
+func getAdministratorsByID(id int64) (Administrator, bool) {
+	val, ok := administratorsByID[id]
+	return val, ok
+}
+
+func getAdministratorsByLoginName(loginName string) (*Administrator, bool) {
+	val, ok := administratorsByLoginName[loginName]
+	return &val, ok
+}
+
 func getLoginAdministrator(c echo.Context) (*Administrator, error) {
 	administratorID := sessAdministratorID(c)
 	if administratorID == 0 {
 		return nil, errors.New("not logged in")
 	}
-	var administrator Administrator
-	err := db.QueryRow("SELECT id, nickname FROM administrators WHERE id = ?", administratorID).Scan(&administrator.ID, &administrator.Nickname)
-	return &administrator, err
+	administrator, _ := getAdministratorsByID(administratorID)
+	return &administrator, nil
 }
 
 func getEvents(all bool) ([]*Event, error) {
@@ -307,7 +316,11 @@ func (r *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return r.templates.ExecuteTemplate(w, name, data)
 }
 
-var db *sql.DB
+var (
+	db                        *sql.DB
+	administratorsByID        map[int64]Administrator
+	administratorsByLoginName map[string]Administrator
+)
 
 func main() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4",
@@ -320,6 +333,23 @@ func main() {
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// cache admins
+	rows, err := db.Query("SELECT id, nickname, login_name, pass_hash FROM administrators")
+	defer rows.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for rows.Next() {
+		var administrator Administrator
+		err := rows.Scan(&administrator.ID, &administrator.Nickname, &administrator.LoginName, &administrator.PassHash)
+		administratorsByID[administrator.ID] = administrator
+		administratorsByLoginName[administrator.LoginName] = administrator
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	e := echo.New()
@@ -712,8 +742,8 @@ func main() {
 		}
 		c.Bind(&params)
 
-		administrator := new(Administrator)
-		if err := db.QueryRow("SELECT * FROM administrators WHERE login_name = ?", params.LoginName).Scan(&administrator.ID, &administrator.LoginName, &administrator.Nickname, &administrator.PassHash); err != nil {
+		administrator, ok := getAdministratorsByLoginName(params.LoginName)
+		if !ok {
 			if err == sql.ErrNoRows {
 				return resError(c, "authentication_failed", 401)
 			}
