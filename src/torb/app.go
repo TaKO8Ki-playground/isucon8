@@ -174,6 +174,37 @@ func getLoginUser(c echo.Context) (*User, error) {
 	return &user, err
 }
 
+func getSheetByRankAndNum(rank string, num int64) (Sheet, bool) {
+	for _, s := range sheets {
+		if s.Rank == rank && s.Num == num {
+			return s, true
+		}
+	}
+	return Sheet{}, false
+}
+
+func getSheetByRank(rank string) (Sheet, bool) {
+	for _, s := range sheets {
+		if s.Rank == rank {
+			return s, true
+		}
+	}
+	return Sheet{}, false
+}
+
+func orderByRankAndNum() {
+	sort.Slice(sheets, func(i, j int) bool {
+		if sheets[i].Rank < sheets[j].Rank {
+			return true
+		} else if sheets[i].Rank == sheets[j].Rank {
+			if sheets[i].Num < sheets[j].Num {
+				return true
+			}
+		}
+		return false
+	})
+}
+
 func getAdministratorsByID(id int64) (Administrator, bool) {
 	val, ok := administratorsByID[id]
 	return val, ok
@@ -242,17 +273,9 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		"C": &Sheets{},
 	}
 
-	rows, err := db.Query("SELECT * FROM sheets ORDER BY `rank`, num")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	orderByRankAndNum()
 
-	for rows.Next() {
-		var sheet Sheet
-		if err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price); err != nil {
-			return nil, err
-		}
+	for _, sheet := range sheets {
 		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
 		event.Total++
 		event.Sheets[sheet.Rank].Total++
@@ -303,8 +326,12 @@ func fillinAdministrator(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func validateRank(rank string) bool {
-	var count int
-	db.QueryRow("SELECT COUNT(*) FROM sheets WHERE `rank` = ?", rank).Scan(&count)
+	count := 0
+	for _, s := range sheets {
+		if s.Rank == rank {
+			count++
+		}
+	}
 	return count > 0
 }
 
@@ -320,6 +347,7 @@ var (
 	db                        *sql.DB
 	administratorsByID        map[int64]Administrator
 	administratorsByLoginName map[string]Administrator
+	sheets                    []Sheet
 )
 
 func main() {
@@ -347,6 +375,22 @@ func main() {
 		err := rows.Scan(&administrator.ID, &administrator.Nickname, &administrator.LoginName, &administrator.PassHash)
 		administratorsByID[administrator.ID] = administrator
 		administratorsByLoginName[administrator.LoginName] = administrator
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	// cache sheets
+	rows, err = db.Query("SELECT * FROM sheets")
+	defer rows.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for rows.Next() {
+		var sheet Sheet
+		err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price)
+		sheets = append(sheets, sheet)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -683,8 +727,9 @@ func main() {
 			return resError(c, "invalid_rank", 404)
 		}
 
-		var sheet Sheet
-		if err := db.QueryRow("SELECT * FROM sheets WHERE `rank` = ? AND num = ?", rank, num).Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price); err != nil {
+		sheetNum, _ := strconv.ParseInt(num, 10, 64)
+		sheet, ok := getSheetByRankAndNum(rank, sheetNum)
+		if !ok {
 			if err == sql.ErrNoRows {
 				return resError(c, "invalid_sheet", 404)
 			}
