@@ -12,7 +12,7 @@ MYSQL_LOG:=/tmp/slow-query.log
 
 KATARU_CFG:=./kataribe.toml
 
-SLACKCAT:=slackcat --tee --channel general
+SLACKCAT:=slackcat --tee --channel isucon8
 SLACKRAW:=slackcat --channel general 
 
 PPROF:=go tool pprof -png -output pprof.png http://localhost:6060/debug/pprof/profile
