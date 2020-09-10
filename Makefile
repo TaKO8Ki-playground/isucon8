@@ -7,7 +7,7 @@ DB_NAME:=isucari
 
 MYSQL_CMD:=mysql -h$(DB_HOST) -P$(DB_PORT) -u$(DB_USER) -p$(DB_PASS) $(DB_NAME)
 
-NGX_LOG:=/tmp/access.log
+NGX_LOG:=/var/log/h2o/access.log
 MYSQL_LOG:=/tmp/slow-query.log
 
 KATARU_CFG:=./kataribe.toml
