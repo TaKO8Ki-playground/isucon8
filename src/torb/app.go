@@ -220,9 +220,8 @@ func getLoginAdministrator(c echo.Context) (*Administrator, error) {
 	if administratorID == 0 {
 		return nil, errors.New("not logged in")
 	}
-	var administrator Administrator
-	err := db.QueryRow("SELECT id, nickname FROM administrators WHERE id = ?", administratorID).Scan(&administrator.ID, &administrator.Nickname)
-	return &administrator, err
+	administrator, _ := getAdministratorsByID(administratorID)
+	return &administrator, nil
 }
 
 func getEvents(all bool) ([]*Event, error) {
@@ -788,8 +787,8 @@ func main() {
 		}
 		c.Bind(&params)
 
-		administrator := new(Administrator)
-		if err := db.QueryRow("SELECT * FROM administrators WHERE login_name = ?", params.LoginName).Scan(&administrator.ID, &administrator.LoginName, &administrator.Nickname, &administrator.PassHash); err != nil {
+		administrator, ok := getAdministratorsByLoginName(params.LoginName)
+		if !ok {
 			if err == sql.ErrNoRows {
 				return resError(c, "authentication_failed", 401)
 			}
