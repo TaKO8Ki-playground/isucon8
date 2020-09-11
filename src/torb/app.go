@@ -365,10 +365,10 @@ func main() {
 
 	// cache admins
 	rows, err := db.Query("SELECT id, nickname, login_name, pass_hash FROM administrators")
-	defer rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var administrator Administrator
@@ -382,10 +382,10 @@ func main() {
 
 	// cache sheets
 	rows, err = db.Query("SELECT * FROM sheets")
-	defer rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var sheet Sheet
