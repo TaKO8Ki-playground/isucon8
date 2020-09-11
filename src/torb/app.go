@@ -366,7 +366,7 @@ func main() {
 	// cache admins
 	rows, err := db.Query("SELECT id, nickname, login_name, pass_hash FROM administrators")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -376,14 +376,14 @@ func main() {
 		administratorsByID[administrator.ID] = administrator
 		administratorsByLoginName[administrator.LoginName] = administrator
 		if err != nil {
-			panic(err.Error())
+			log.Fatal(err)
 		}
 	}
 
 	// cache sheets
 	rows, err = db.Query("SELECT * FROM sheets")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -392,7 +392,7 @@ func main() {
 		err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price)
 		sheets = append(sheets, sheet)
 		if err != nil {
-			panic(err.Error())
+			log.Fatal(err)
 		}
 	}
 
