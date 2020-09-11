@@ -363,39 +363,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// cache admins
-	rows, err := db.Query("SELECT id, nickname, login_name, pass_hash FROM administrators")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var administrator Administrator
-		err := rows.Scan(&administrator.ID, &administrator.Nickname, &administrator.LoginName, &administrator.PassHash)
-		administratorsByID[administrator.ID] = administrator
-		administratorsByLoginName[administrator.LoginName] = administrator
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	// cache sheets
-	rows, err = db.Query("SELECT * FROM sheets")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var sheet Sheet
-		err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price)
-		sheets = append(sheets, sheet)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	e := echo.New()
 	funcs := template.FuncMap{
 		"encode_json": func(v interface{}) string {
@@ -430,6 +397,39 @@ func main() {
 		err := cmd.Run()
 		if err != nil {
 			return nil
+		}
+
+		// cache admins
+		rows, err := db.Query("SELECT id, nickname, login_name, pass_hash FROM administrators")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var administrator Administrator
+			err := rows.Scan(&administrator.ID, &administrator.Nickname, &administrator.LoginName, &administrator.PassHash)
+			administratorsByID[administrator.ID] = administrator
+			administratorsByLoginName[administrator.LoginName] = administrator
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		// cache sheets
+		rows, err = db.Query("SELECT * FROM sheets")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var sheet Sheet
+			err := rows.Scan(&sheet.ID, &sheet.Rank, &sheet.Num, &sheet.Price)
+			sheets = append(sheets, sheet)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		return c.NoContent(204)
